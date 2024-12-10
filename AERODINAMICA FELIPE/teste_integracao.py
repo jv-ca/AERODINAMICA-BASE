@@ -1,6 +1,16 @@
 import pandas as pd
 import CoolProp.CoolProp as cp
-import matplotlib.pyplot as plt
+
+# Função para calcular a área com a Regra de Simpson
+def regra_simpson(x, y):
+    h = (x[-1] - x[0]) / (len(x) - 1)
+    area = y[0] + y[-1]
+    for i in range(1, len(x) - 1, 2):
+        area += 4 * y[i]
+    for i in range(2, len(x) - 2, 2):
+        area += 2 * y[i]
+    area *= h / 3
+    return area
 
 # Dados do INMET
 T_amb = 18.4  # Temperatura (°C)
@@ -38,8 +48,29 @@ df_X = pd.DataFrame(x_plot, columns=['x_plot'])
 # Valores de x_plot que devem ser desconsiderados
 x_plot_correcoes = [0.91097, 0.83004, 0.75148, 0.48034, 0.42901]
 
+# Criar o DataFrame df_areas_simp para armazenar as áreas (sem título de colunas no início)
+df_areas_simp = pd.DataFrame(index=["Intradorso", "Extradorso", "Total"])
+
 # Loop para ler e processar cada arquivo
 for caminho_arquivo, nome_df in caminhos_arquivos:
+    # Nome do ângulo a partir do nome do arquivo
+    if nome_df == "df_neg6": 
+        angulo = "-6"
+    elif nome_df == "df_neg4": 
+        angulo = "-4"
+    elif nome_df == "df_neg2": 
+        angulo = "-2"
+    elif nome_df == "df_0": 
+        angulo = "0"
+    elif nome_df == "df_2": 
+        angulo = "2"
+    elif nome_df == "df_4": 
+        angulo = "4"
+    elif nome_df == "df_6": 
+        angulo = "6"
+    elif nome_df == "df_16": 
+        angulo = "16"
+    
     # Ler o conteúdo do arquivo
     with open(caminho_arquivo, 'r') as file:
         texto = file.read()
@@ -71,71 +102,53 @@ for caminho_arquivo, nome_df in caminhos_arquivos:
     # Converter os valores das colunas para float
     df_modificado = df_modificado.apply(pd.to_numeric, errors='coerce')
 
-    # Atribuir o DataFrame modificado à variável correspondente
-    globals()[nome_df] = df_modificado
-
     # Criar o DataFrame df_P (com as colunas de pressão, exceto as últimas duas)
     df_P = df_modificado.iloc[:, :-2]  # Seleciona todas as colunas exceto as últimas duas
     nome_df_P = f"{nome_df}__P"
     globals()[nome_df_P] = df_P
 
-# Loop para gerar os gráficos
-for caminho_arquivo, nome_df in caminhos_arquivos:
-    # Nome do DataFrame com o final __P
-    nome_df_P = f"{nome_df}__P"
-    
-    # Recuperar o DataFrame com o final __P
-    if nome_df_P in globals():
-        df_P = globals()[nome_df_P]
-    else:
-        print(f"Atenção: O DataFrame {nome_df_P} não foi encontrado.")
-        continue
-    
     # Ajustar os dados para que o gráfico comece da segunda coluna
     y_values = df_P.iloc[0, 1:].values  # Ignora a primeira coluna (índice)
-    y_values_ajustado = y_values/1000
+    y_values_ajustado = y_values / 1000
 
     # Desconsiderar os valores associados aos valores de x_plot a serem ignorados
     indices_para_remover = df_X[df_X['x_plot'].isin(x_plot_correcoes)].index
     x_filtered = df_X.drop(indices_para_remover)['x_plot'].values
     y_filtered = [y for i, y in enumerate(y_values_ajustado) if i not in indices_para_remover]
 
-    # Definir o título com base no nome do DataFrame (e corrigir o símbolo do grau)
-    if nome_df == "df_neg6": 
-        titulo = 'Alpha = -6°'
-    elif nome_df == "df_neg4": 
-        titulo = 'Alpha = -4°'
-    elif nome_df == "df_neg2": 
-        titulo = 'Alpha = -2°'
-    elif nome_df == "df_0": 
-        titulo = 'Alpha = 0°'
-    elif nome_df == "df_2": 
-        titulo = 'Alpha = 2°'
-    elif nome_df == "df_4": 
-        titulo = 'Alpha = 4°'
-    elif nome_df == "df_6": 
-        titulo = 'Alpha = 6°'
-    elif nome_df == "df_16": 
-        titulo = 'Alpha = 16°'
+    # Calcular as áreas utilizando a regra de Simpson
+    area_intra_simps = regra_simpson(x_filtered[:29], y_filtered[:29])
+    area_extra_simps = regra_simpson(x_filtered[29:], y_filtered[29:])
 
-    # Criar o gráfico
-    plt.figure(figsize=(10, 6))
+    # Adicionar as áreas no DataFrame df_areas_simp
+    df_areas_simp[angulo] = [area_intra_simps, area_extra_simps, area_intra_simps - area_extra_simps]
 
-    # Plotar os primeiros 29 pontos com cor azul
-    plt.plot(x_filtered[:29], y_filtered[:29], 'bo-', label="Intradorso")
+    # Exibir as áreas calculadas
+    #print(f"Área do intradorso ({angulo}°): {area_intra_simps:.6f}")
+    #print(f"Área do extradorso ({angulo}°): {area_extra_simps:.6f}")
 
-    # Plotar os últimos pontos com cor preta
-    plt.plot(x_filtered[29:], y_filtered[29:], 'ko-', label="Extradorso")
+# Exibir o DataFrame final com as áreas calculadas
+print("\nDataFrame com áreas calculadas:")
+print(df_areas_simp)
 
-    # Configurações do gráfico
-    plt.title(titulo)
-    plt.xlabel('x/c')
-    plt.ylabel('Cp')
-    plt.legend()
-    plt.grid(True)
+c = 320*10**(-3) # Corda em metros
 
-    # Inverter o eixo Y
-    plt.gca().invert_yaxis()  # Inverte o eixo Y
+# Definir a função para calcular os valores de CN
+def calcular_CN(df_areas_simp, c):
+    # Criar um DataFrame vazio para armazenar os valores de CN, com uma única linha
+    df_CN = pd.DataFrame(columns=df_areas_simp.columns)
+    
+    # Para cada coluna (ângulo) em df_areas_simp, calcular CN e armazenar
+    df_CN.loc[0] = df_areas_simp.loc["Total"] / c  # Dividir a linha "Total" pela corda c
+    
+    return df_CN
 
-    # Exibir o gráfico
-    plt.show()
+# Variável da corda
+c = 320 * 10**(-3)  # Corda em metros
+
+# Calcular os valores de CN e armazenar no DataFrame df_CN
+df_CN = calcular_CN(df_areas_simp, c)
+
+# Exibir o DataFrame com os valores de CN
+print("\nDataFrame com os valores de CN:")
+print(df_CN)
