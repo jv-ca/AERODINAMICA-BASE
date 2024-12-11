@@ -147,16 +147,25 @@ for caminho_arquivo, nome_df in caminhos_arquivos:
     plt.show()
 
 
+
 # Ângulos de ataque correspondentes
 angulos_ataque = [-6, -4, -2, 0, 2, 4, 6, 16]
 
 # Paleta de cores para diferenciar cada ângulo
 cores = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange']  # Use cores diferentes para cada ângulo
+line_styles = ['-', '--', '-.', ':', '-', '--', '-.', ':']
 
 ####### EXTRADORSO ##########
 # Loop para plotar os dados
-for i, (cp_extradorso, angulo, cor) in enumerate(zip(C_p_extradorso, angulos_ataque, cores)):
-    plt.plot(x_filtered[25:], cp_extradorso, marker='o', linestyle='-', color=cor, label=f'Ângulo: {angulo}°')
+for i, (cp_extradorso, angulo, cor, line_style) in enumerate(zip(C_p_extradorso, angulos_ataque, cores, line_styles)):
+    plt.plot(
+        x_filtered[25:], 
+        cp_extradorso, 
+        marker='o', 
+        linestyle=line_style,  # Estilo de linha correspondente
+        color=cor, 
+        label=f'Ângulo: {angulo}°'
+    )
 
 # Configurações do gráfico
 plt.title('Distribuição de Cp no extradorso por ângulo de ataque na corda')
@@ -170,8 +179,15 @@ plt.show()
 
 ############# INTRADORSO ############
 # Loop para plotar os dados
-for i, (C_p_intradorso, angulo, cor) in enumerate(zip(C_p_intradorso, angulos_ataque, cores)):
-    plt.plot(x_filtered[:25], C_p_intradorso, marker='o', linestyle='-', color=cor, label=f'Ângulo: {angulo}°')
+for i, (cp_intradorso, angulo, cor, line_style) in enumerate(zip(C_p_intradorso, angulos_ataque, cores, line_styles)):
+    plt.plot(
+        x_filtered[:25],  # Seleciona os valores correspondentes ao intradorso
+        cp_intradorso, 
+        marker='o', 
+        linestyle=line_style,  # Estilo de linha correspondente
+        color=cor, 
+        label=f'Ângulo: {angulo}°'
+    )
 
 # Configurações do gráfico
 plt.title('Distribuição de Cp no intradorso por ângulo de ataque na corda')

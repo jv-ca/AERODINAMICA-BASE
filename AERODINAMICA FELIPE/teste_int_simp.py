@@ -2,6 +2,7 @@ import pandas as pd
 import CoolProp.CoolProp as cp
 import numpy as np
 import backend as BE
+import math
 # Função para calcular a área com a Regra de Simpson
 def regra_simpson(x, y):
     h = (x[-1] - x[0]) / (len(x) - 1)
@@ -129,9 +130,11 @@ for caminho_arquivo, nome_df in caminhos_arquivos:
     df_areas_simp[angulo] = [area_intra_simps, area_extra_simps, area_intra_simps - area_extra_simps]
     corda = 0.32
     # x 
-    c_n = -(area_intra_simps + area_extra_simps)
+    c_n = -(BE.integrar_cp_simpson(x_filtered,y_filtered))
+    c_l = (c_n)*math.cos(math.radians(int(angulo)))
     print(f'Angulo: {angulo}')
     print(f'c_n: {c_n}')
+    print(f'c_l: {c_l}')
     # Exibir as áreas calculadas
     #print(f"Área do intradorso ({angulo}°): {area_intra_simps:.6f}")
     #print(f"Área do extradorso ({angulo}°): {area_extra_simps:.6f}")

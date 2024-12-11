@@ -2,7 +2,7 @@ import pandas as pd
 import CoolProp.CoolProp as cp
 import numpy as np
 import backend as BE
-
+import math
 # Função para calcular a área com a Regra dos Trapézios
 def regra_trapezios(x, y):
     h = (x[-1] - x[0]) / (len(x) - 1)
@@ -120,9 +120,11 @@ for caminho_arquivo, nome_df in caminhos_arquivos:
     x_filtered = df_X.drop(indices_para_remover)['x_plot'].values
     y_filtered = [y for i, y in enumerate(y_values_ajustado) if i not in indices_para_remover]
 
-    c_n = (-BE.integrar_cp_trapezio(x_filtered,y_filtered))
+    c_n = -(BE.integrar_cp_trapezio(x_filtered,y_filtered))
+    c_l = (c_n)*math.cos(math.radians(int(angulo)))
     print(f'Angulo: {angulo}')
     print(f'c_n: {c_n}')
+    print(f'c_l: {c_l}')
     # Calcular as áreas utilizando a regra dos trapézios
     area_intra_trap = regra_trapezios(x_filtered[:29], y_filtered[:29])
     area_extra_trap = regra_trapezios(x_filtered[29:], y_filtered[29:])
